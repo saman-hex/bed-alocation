@@ -42,5 +42,5 @@ To enable it in your fork:
 2. Set **Source** to **GitHub Actions**.
 3. Push to `master` — the workflow will do the rest.
 
-The live site will be available at `https://<your-username>.github.io/bed-alocation/`.
+The live site will be available at **https://saman-hex.github.io/bed-alocation/**.
 
