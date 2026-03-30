@@ -47,12 +47,16 @@ bed-alocation/
 
 ```
 App (state owner)
- ├── rooms[]       { id, name, beds }   — managed by RoomManager
- ├── people[]      string[]             — managed by PeopleManager
- └── allocation[]  { ...room, assignments[] } | null — set on "Assign Randomly"
+ ├── rooms[]           { id, name, beds }        — managed by RoomManager
+ ├── people[]          string[]                  — managed by PeopleManager
+ ├── couples[]         [string, string][]        — managed by PeopleManager (couple-link UI)
+ ├── assignmentMode    'random' | 'couple-friendly'
+ └── allocation[]      { ...room, assignments[] } | null — set on "Assign"
 
 Allocation algorithm (App.jsx › allocate()):
-  shuffle people → iterate rooms → fill beds sequentially → set allocation state
+  random mode:         shuffle people → iterate rooms → fill beds sequentially
+  couple-friendly mode: assign singles randomly first → then assign each couple,
+                        preferring same room; falls back to any available bed
 ```
 
 **State lives entirely in `App.jsx`.** Child components receive slices via props and call setter callbacks. There is no global store, no router, no persistence layer.
@@ -64,10 +68,10 @@ Allocation algorithm (App.jsx › allocate()):
 | File | Responsibility |
 |---|---|
 | `src/config.js` | Change default rooms/people without touching components |
-| `src/App.jsx` | Holds `rooms`, `people`, `allocation` state; runs `allocate()` |
+| `src/App.jsx` | Holds `rooms`, `people`, `couples`, `assignmentMode`, `allocation` state; runs `allocate()` |
 | `src/components/RoomManager.jsx` | Add/remove/rename rooms, change bed counts |
-| `src/components/PeopleManager.jsx` | Add/remove people, enforces `people.length <= totalBeds` |
-| `src/components/AllocationResults.jsx` | Renders result cards; purely presentational |
+| `src/components/PeopleManager.jsx` | Add/remove people, enforces `people.length <= totalBeds`; link/unlink couples |
+| `src/components/AllocationResults.jsx` | Renders result cards with couple indicators; purely presentational |
 | `vite.config.js` | Sets `base: '/bed-alocation/'` — required for GitHub Pages sub-path |
 | `.github/workflows/deploy.yml` | CI/CD: build → deploy to `gh-pages` branch on push to `main` |
 
@@ -113,6 +117,8 @@ There are **no test scripts or linters configured** in `package.json` at this ti
 | Core allocation feature | ✅ Complete |
 | Room management (add/remove/rename/resize) | ✅ Complete |
 | People management (add/remove, capacity guard) | ✅ Complete |
+| Couple-Friendly assignment mode | ✅ Complete |
+| Couple management UI (link/unlink partners) | ✅ Complete |
 | GitHub Pages CI/CD | ✅ Working |
 | Tests | ❌ None yet |
 | Linting / formatting | ❌ Not configured |
@@ -128,6 +134,8 @@ There are **no test scripts or linters configured** in `package.json` at this ti
 | Date | Branch | Summary |
 |---|---|---|
 | 2026-03-30 | `copilot/create-agent-friendly-md-file` | Initial repo setup (React + Vite app, GitHub Pages deploy). Created this `AGENT.md`. |
+| 2026-03-30 | `copilot/add-assignment-mode-selector` | Added Couple-Friendly assignment mode: `couples` state in App, couple link/unlink UI in PeopleManager, couple indicator in AllocationResults, new CSS classes. |
+| 2026-03-30 | `copilot/check-page-loading-issue` | Investigated page-loading report after PR #4 merge. Build ✅, CI deploy ✅, all logic correct. Updated AGENT.md (Architecture, Current State, Session Log) to reflect post-PR #4 state. |
 
 ---
 
