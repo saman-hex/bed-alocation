@@ -1,4 +1,4 @@
-# Agent Context — Bed Allocation
+# Agent Context — Bed Allocation (Couple-Friendly Branch)
 
 > **How to use this file:** Load this file at the start of every agent session before executing any prompt. It provides the full project context, architecture, current state, and working conventions so you never start blind.
 
