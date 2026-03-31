@@ -1,4 +1,4 @@
-export default function AllocationResults({ allocation, couples = [] }) {
+export default function AllocationResults({ allocation, couples = [], coupleEmojiMap = {} }) {
   const partnerOf = {}
   couples.forEach(([a, b]) => {
     partnerOf[a] = b
@@ -19,8 +19,8 @@ export default function AllocationResults({ allocation, couples = [] }) {
                   <span className="bed-number">Bed {i + 1}</span>
                   <span className="assigned-person">
                     {person ?? '—'}
-                    {person && partnerOf[person] && (
-                      <span className="result-couple-tag" title={`Couple with ${partnerOf[person]}`}>💑</span>
+                    {person && partnerOf[person] && coupleEmojiMap[person] && (
+                      <span className="result-couple-tag" title={`Couple with ${partnerOf[person]}`}>{coupleEmojiMap[person]}</span>
                     )}
                   </span>
                 </li>

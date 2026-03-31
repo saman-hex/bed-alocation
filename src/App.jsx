@@ -32,57 +32,113 @@ function App() {
     const coupledNames = new Set(activeCouples.flat())
     const singles = people.filter((p) => !coupledNames.has(p))
 
-    // Build mutable result structure
+    // Generate unique emojis for each couple
+    const coupleEmojis = [
+      '💙', '💚', '💛', '🧡', '💜', '🩷', '🩵', '🖤', '🤍', '🤎',
+      '💘', '💝', '💞', '💟', '💌', '💍', '💑', '👩‍❤️‍👨', '👨‍❤️‍👨', '👩‍❤️‍👩',
+      '🫶', '🤝', '👩‍❤️‍💋‍👨', '👨‍❤️‍💋‍👨', '👩‍❤️‍💋‍👩'
+    ]
+    const coupleEmojiMap = {}
+    activeCouples.forEach(([a, b], i) => {
+      const emoji = coupleEmojis[i % coupleEmojis.length]
+      coupleEmojiMap[a] = emoji
+      coupleEmojiMap[b] = emoji
+    })
+
+    // Step 1: Randomly assign all people to beds
+    const shuffledPeople = [...people].sort(() => Math.random() - 0.5)
     const result = rooms.map((room) => ({
       ...room,
       assignments: Array(room.beds).fill(null),
     }))
-
-    function getAvailableSlots() {
-      const slots = []
-      result.forEach((room, ri) => {
-        room.assignments.forEach((a, bi) => {
-          if (a === null) slots.push({ ri, bi })
-        })
-      })
-      return slots
+    let idx = 0
+    for (let ri = 0; ri < result.length; ri++) {
+      for (let bi = 0; bi < result[ri].assignments.length; bi++) {
+        if (idx < shuffledPeople.length) {
+          result[ri].assignments[bi] = shuffledPeople[idx++]
+        }
+      }
     }
 
-    function pickRandom(arr) {
-      return arr[Math.floor(Math.random() * arr.length)]
+    // Step 2: For each couple, try to move both partners into a room with 2 available beds
+    function findRoomsWithTwoEmptyBeds() {
+      return result
+        .map((room, ri) => ({
+          ri,
+          emptyBeds: room.assignments
+            .map((a, bi) => (a === null ? bi : null))
+            .filter((x) => x !== null),
+        }))
+        .filter((r) => r.emptyBeds.length >= 2)
     }
 
-    function assign(person, slot) {
-      result[slot.ri].assignments[slot.bi] = person
+    // Remove couples from their current beds for reassignment
+    function removeFromAssignments(person) {
+      for (let ri = 0; ri < result.length; ri++) {
+        const bi = result[ri].assignments.indexOf(person)
+        if (bi !== -1) {
+          result[ri].assignments[bi] = null
+          return
+        }
+      }
     }
 
-    // Step 1: Separate singles from coupled people (handled above)
-    // Step 2: Assign singles randomly
-    const shuffledSingles = [...singles].sort(() => Math.random() - 0.5)
-    shuffledSingles.forEach((person) => {
-      const slot = pickRandom(getAvailableSlots())
-      assign(person, slot)
-    })
-
-    // Step 3: Iterate through couples one by one
+    // Try to assign as many couples as possible to the same room with 2 empty beds
     const shuffledCouples = [...activeCouples].sort(() => Math.random() - 0.5)
     shuffledCouples.forEach(([p1, p2]) => {
-      // Step 4: Assign first partner to any available bed
-      const available = getAvailableSlots()
-      const slot1 = pickRandom(available)
-      assign(p1, slot1)
-
-      // Step 5: Try to assign second partner to the same room
-      const sameRoom = getAvailableSlots().filter((s) => s.ri === slot1.ri)
-      if (sameRoom.length > 0) {
-        assign(p2, pickRandom(sameRoom))
-      } else {
-        // Step 6: Fall back to any remaining available bed
-        assign(p2, pickRandom(getAvailableSlots()))
+      // Remove both partners from their current beds
+      removeFromAssignments(p1)
+      removeFromAssignments(p2)
+      // Find a room with 2 empty beds
+      const roomsWith2 = findRoomsWithTwoEmptyBeds()
+      if (roomsWith2.length > 0) {
+        const chosenRoom = roomsWith2[Math.floor(Math.random() * roomsWith2.length)]
+        // Randomly pick two beds in this room
+        const [b1, b2] = chosenRoom.emptyBeds.sort(() => Math.random() - 0.5).slice(0, 2)
+        result[chosenRoom.ri].assignments[b1] = p1
+        result[chosenRoom.ri].assignments[b2] = p2
       }
     })
 
-    setAllocation(result)
+    // Step 3: For remaining couples not yet assigned together, assign them to different rooms
+    // Find unassigned partners
+    const unassignedCouples = shuffledCouples.filter(([p1, p2]) => {
+      let found1 = false, found2 = false
+      for (let ri = 0; ri < result.length; ri++) {
+        if (result[ri].assignments.includes(p1)) found1 = true
+        if (result[ri].assignments.includes(p2)) found2 = true
+      }
+      return !(found1 && found2)
+    })
+    unassignedCouples.forEach(([p1, p2]) => {
+      // Remove both partners from their current beds
+      removeFromAssignments(p1)
+      removeFromAssignments(p2)
+      // Assign to different rooms
+      // Find all available slots
+      const availableSlots = []
+      result.forEach((room, ri) => {
+        room.assignments.forEach((a, bi) => {
+          if (a === null) availableSlots.push({ ri, bi })
+        })
+      })
+      // Try to pick two slots in different rooms
+      const slot1 = availableSlots[Math.floor(Math.random() * availableSlots.length)]
+      // Remove slot1 from availableSlots
+      const availableSlots2 = availableSlots.filter((s) => s.ri !== slot1.ri)
+      let slot2
+      if (availableSlots2.length > 0) {
+        slot2 = availableSlots2[Math.floor(Math.random() * availableSlots2.length)]
+      } else {
+        // If not possible, just pick any other slot
+        slot2 = availableSlots.filter((s) => s.ri !== slot1.ri || s.bi !== slot1.bi)[0]
+      }
+      if (slot1) result[slot1.ri].assignments[slot1.bi] = p1
+      if (slot2) result[slot2.ri].assignments[slot2.bi] = p2
+    })
+
+    // Pass emoji mapping with allocation for rendering
+    setAllocation({ rooms: result, coupleEmojiMap })
   }
 
   function allocate() {
@@ -153,7 +209,7 @@ function App() {
               ⚠️ Too many people ({people.length}) for the available beds ({totalBeds}).
             </p>
           )}
-          {allocation && <AllocationResults allocation={allocation} couples={couples} />}
+          {allocation && <AllocationResults allocation={allocation.rooms} couples={couples} coupleEmojiMap={allocation.coupleEmojiMap} />}
         </section>
       </main>
     </div>
