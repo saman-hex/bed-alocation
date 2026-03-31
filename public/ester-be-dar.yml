@@ -1,0 +1,26 @@
+rooms:
+  - green: 2
+  - yellow: 2
+  - blue: 2
+  - family: 5
+  - canape: 2
+  - cottage: 3
+  - single-stray: 1
+guests:
+  - Behnam
+  - Nasim
+  - Sina
+  - Shirin
+  - Pooya
+  - Anoosha
+  - Shayan
+  - Niousha
+  - Mamad
+  - Pargol
+  - Alireza
+  - Solmaz
+  - Avin
+  - Bita
+  - Bahar
+  - Saber
+  - Saman

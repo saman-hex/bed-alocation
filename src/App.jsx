@@ -4,6 +4,7 @@ import RoomManager from './components/RoomManager'
 import PeopleManager from './components/PeopleManager'
 import AllocationResults from './components/AllocationResults'
 import './App.css'
+import yaml from 'js-yaml'
 
 function App() {
   const [rooms, setRooms] = useState(defaultRooms)
@@ -21,7 +22,7 @@ function App() {
       ...room,
       assignments: Array.from({ length: room.beds }, () => shuffled[idx++] ?? null),
     }))
-    setAllocation(result)
+    setAllocation({ rooms: result, coupleEmojiMap: {} })
   }
 
   function allocateCoupleFriendly() {
@@ -149,6 +150,30 @@ function App() {
     }
   }
 
+  function loadEsterBeDarRooms() {
+    fetch(import.meta.env.BASE_URL + 'ester-be-dar.yml')
+      .then(async (res) => {
+        if (!res.ok) throw new Error('HTTP error ' + res.status)
+        try {
+          const text = await res.text()
+          const yml = yaml.load(text)
+          let nextId = 1;
+          const rooms = (yml.rooms || []).map((entry) => {
+            const name = Object.keys(entry)[0]
+            const beds = entry[name]
+            return { id: nextId++, name, beds }
+          })
+          setRooms(rooms)
+          if (Array.isArray(yml.guests)) {
+            setPeople(yml.guests)
+          }
+        } catch (err) {
+          alert('Failed to parse ester-be-dar.yml: ' + err)
+        }
+      })
+      .catch((err) => alert('Failed to load ester-be-dar.yml: ' + err))
+  }
+
   const canAllocate = people.length > 0 && people.length <= totalBeds
 
   return (
@@ -171,7 +196,7 @@ function App() {
         </div>
 
         <section className="allocation-section">
-          <div className="allocate-controls">
+          <div className="allocate-controls" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <div className="mode-selector">
               <label htmlFor="assignment-mode" className="mode-label">
                 Assignment Mode:
@@ -202,6 +227,13 @@ function App() {
               }
             >
               {assignmentMode === 'couple-friendly' ? '💑 Assign (Couple-Friendly)' : '🎲 Assign Randomly'}
+            </button>
+            <button
+              className="ester-btn"
+              style={{ background: '#22c55e', color: 'white', fontWeight: 700, borderRadius: 6, padding: '0.5rem 1.5rem' }}
+              onClick={loadEsterBeDarRooms}
+            >
+              ester-be-dar
             </button>
           </div>
           {!canAllocate && people.length > totalBeds && (
