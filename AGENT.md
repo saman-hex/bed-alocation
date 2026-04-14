@@ -17,6 +17,7 @@
 
 **Purpose:** Randomly assign a list of people to beds spread across configurable rooms.
 
+
 ---
 
 ## Repository Layout
